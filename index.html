@@ -36,7 +36,8 @@
     <div id="container"></div>
 
 		<script src="js/d3.min.js" charset="utf-8"></script>
-		<script src="js/three.js"></script>
+    <script src="js/three.min.js"></script>
+    <script src="js/stats.min.js"></script>
 
     <script id="vs" type="x-shader/x-vertex" >
       varying vec2 vUv;
@@ -56,8 +57,8 @@
         vec2 pos = vUv;
         if( length( pos ) > 1.0)
           discard;
-        gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);
-/*
+        //gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);
+
         float r = 1.0;
         float x = pos.x;
         float y = pos.y;
@@ -72,7 +73,6 @@
 //        gl_FragColor = vec4( normal, 1.0 );
 
         gl_FragColor = vec4(1.0, 1.0, 1.0, 1.0) * diffuse_value;
-        */
       }
     </script>
 
@@ -81,7 +81,7 @@
     var width = 720,
         height = 720;
 
-    var nodes = d3.range(256).map(function() { return {radius: Math.random() * 20 + 4}; }),
+    var nodes = d3.range(256).map(function() { return {radius: Math.pow(Math.random(), 3) * 50 + 4}; }),
         root = nodes[0];
 
     root.radius = 0;
@@ -113,6 +113,11 @@
 
       container = document.getElementById( 'container' );
       container.appendChild( renderer.domElement );
+
+      stats = new Stats();
+      stats.domElement.style.position = 'absolute';
+      stats.domElement.style.top = '0px';
+      container.appendChild( stats.domElement );
 
       var r = 1.0;
 
@@ -154,7 +159,8 @@
           requestAnimationFrame(render);
 
           renderer.render(scene, camera);
-          console.log( "calls:" + renderer.info.render.calls );
+          stats.update();
+          //console.log( "calls:" + renderer.info.render.calls );
       }
       render();
 
@@ -181,8 +187,6 @@
           vertices[iv].x = x; vertices[iv].y = y; x += s; iv++;
           vertices[iv].x = x; vertices[iv].y = y; y -= s; iv++;
           vertices[iv].x = x; vertices[iv].y = y;         iv++;
-
-          //console.log( JSON.stringify( group.vertices ) );
         }
         group.verticesNeedUpdate = true;
       });
