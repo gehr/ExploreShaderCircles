@@ -54,10 +54,11 @@
       varying vec2 vUv;
 
       void main(void) {
+        gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);
+
         vec2 pos = vUv;
         if( length( pos ) > 1.0)
           discard;
-        //gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);
 
         float r = 1.0;
         float x = pos.x;
@@ -70,7 +71,7 @@
 
         float diffuse_value = max(dot(normal, vertex_light_position), 0.0);
 
-//        gl_FragColor = vec4( normal, 1.0 );
+        //gl_FragColor = vec4( normal, 1.0 );
 
         gl_FragColor = vec4(1.0, 1.0, 1.0, 1.0) * diffuse_value;
       }
@@ -81,7 +82,8 @@
     var width = 720,
         height = 720;
 
-    var nodes = d3.range(10).map(function() { return {radius: Math.pow(Math.random(), 3) * 50 + 4}; }),
+    var i=0;
+    var nodes = d3.range(200).map(function() { return {radius: Math.pow(Math.random(), 3) * 20 + 10}; }),
         root = nodes[0];
 
     root.radius = 0;
@@ -92,6 +94,11 @@
         .charge(function(d, i) { return i ? 0 : -2000; })
         .nodes(nodes)
         .size([width, height]);
+
+      root.radius = 0;  
+      root.fixed = true;
+      root.x = 0;
+      root.y = 0;
 
       n = nodes.length;
       for (i = 1; i < n; ++i) {
@@ -119,21 +126,14 @@
       stats.domElement.style.top = '0px';
       container.appendChild( stats.domElement );
 
-      var r = 1.0;
-
       var quad = new THREE.Shape();
-      x = -r;
-      y = -r;
-      d = r*2;
-      quad.moveTo( x, y ); y += d;
-      quad.lineTo( x, y ); x += d;
-      quad.lineTo( x, y ); y -= d;
-      quad.lineTo( x, y ); x -= d;
-      quad.lineTo( x, y );
+      quad.moveTo( -1, -1 ); 
+      quad.lineTo( -1,  1 ); 
+      quad.lineTo(  1,  1 ); 
+      quad.lineTo(  1, -1 ); 
+      quad.lineTo( -1, -1 );
 
       var geometry = new THREE.ShapeGeometry( quad );
-
-      var material = new THREE.MeshBasicMaterial( { color: 0x00ff00 } );
 
       var material = new THREE.ShaderMaterial({
          vertexShader: document.getElementById('vs').innerHTML,
@@ -141,18 +141,11 @@
       });
 
       var group = new THREE.Geometry();
-
       n = nodes.length;
       for (i = 1; i < n; ++i) {
           var mesh = new THREE.Mesh( geometry, material );
-          node = nodes[i];
-          node.mesh = mesh;
-          r = node.radius;
-          mesh.scale.set( r, r, r );
-          mesh.position.set( node.x, node.y, 0 );
           THREE.GeometryUtils.merge( group, mesh );
       }
-
       scene.add(new THREE.Mesh( group, material ));
 
       function render() {
@@ -173,15 +166,15 @@
         for (i = 1; i < n; ++i) q.visit(collide(nodes[i]));
 
         var iv = 0;
+        var vertices = group.vertices;
+
         for (i = 1; i < n; ++i) {
           node = nodes[i];
-          //d.mesh.position.set( d.x, -d.y, 0 );
 
-          x = node.x;
-          y = node.y;
-          s = node.radius * 2;
-
-          var vertices = group.vertices;
+          r = node.radius;
+          x = node.x - r;
+          y = node.y - r;
+          s = r * 2;
 
           vertices[iv].x = x; vertices[iv].y = y; y += s; iv++;
           vertices[iv].x = x; vertices[iv].y = y; x += s; iv++;
@@ -190,17 +183,28 @@
         }
         group.verticesNeedUpdate = true;
       });
-/*
-      canvas.on("mousemove", function() {
-        var p1 = d3.mouse(this);
-        root.px = p1[0];
-        root.py = p1[1];
+
+      var projector = new THREE.Projector();
+
+      renderer.domElement.onmousemove = function(event) {
+
+        // find the intersection of the mouse position in screen coordinates and world coordinates at z=0
+        var vector = new THREE.Vector3(
+            ( event.clientX / window.innerWidth ) * 2 - 1,
+            - ( event.clientY / window.innerHeight ) * 2 + 1,
+            0.5 );
+        projector.unprojectVector( vector, camera );
+        var dir = vector.sub( camera.position ).normalize();
+        var distance = - camera.position.z / dir.z;
+        var pos = camera.position.clone().add( dir.multiplyScalar( distance ) );
+
+        root.px = pos.x; 
+        root.py = pos.y; 
         force.resume();
-      });
-*/
+      };
 
       function collide(node) {
-        var r = node.radius + 16,
+        var r = node.radius + 30,
             nx1 = node.x - r,
             nx2 = node.x + r,
             ny1 = node.y - r,
@@ -210,7 +214,7 @@
             var x = node.x - quad.point.x,
                 y = node.y - quad.point.y,
                 l = Math.sqrt(x * x + y * y),
-                r = node.radius + quad.point.radius + 5;
+                r = node.radius + quad.point.radius;
             if (l < r) {
               l = (l - r) / l * .5;
               node.x -= x *= l;
