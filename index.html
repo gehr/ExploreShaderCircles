@@ -5,9 +5,35 @@
 		<title>Explore Shader Circles - d3 force + three.js webgl</title>
 		<meta charset="utf-8">
 		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+    <style>
+      body {
+        color: #cccccc;
+        font-family:Monospace;
+        font-size:13px;
+        text-align:center;
+
+        background-color: #050505;
+        margin: 0px;
+        overflow: hidden;
+      }
+
+      #info {
+        position: absolute;
+        top: 0px; width: 100%;
+        padding: 5px;
+      }
+
+      a {
+        color: #0080ff;
+      }
+
+    </style>
+
 	</head>
 
 	<body>
+
+    <div id="container"></div>
 
 		<script src="js/d3.min.js" charset="utf-8"></script>
 		<script src="js/three.js"></script>
@@ -53,6 +79,8 @@
     var width = 720,
         height = 720;
 
+    //window.innerWidth / window.innerHeight
+
     var nodes = d3.range(256).map(function() { return {radius: Math.random() * 20 + 4}; }),
         root = nodes[0];
 
@@ -82,7 +110,9 @@
 
       var renderer = new THREE.WebGLRenderer();
       renderer.setSize(width, height);
-      document.body.appendChild(renderer.domElement);
+
+      container = document.getElementById( 'container' );
+      container.appendChild( renderer.domElement );
 
       var r = 1.0;
 
@@ -107,8 +137,6 @@
 
       var group = new THREE.Geometry();
 
-      var last;
-
       n = nodes.length;
       for (i = 1; i < n; ++i) {
           var mesh = new THREE.Mesh( geometry, material );
@@ -117,9 +145,7 @@
           r = node.radius;
           mesh.scale.set( r, r, r );
           mesh.position.set( node.x, node.y, 0 );
-          console.log( JSON.stringify( mesh.position ) + JSON.stringify( mesh.scale) );
           THREE.GeometryUtils.merge( group, mesh );
-          last = mesh;
       }
 
       scene.add(new THREE.Mesh( group, material ));
