@@ -56,7 +56,8 @@
         vec2 pos = vUv;
         if( length( pos ) > 1.0)
           discard;
-
+        gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);
+/*
         float r = 1.0;
         float x = pos.x;
         float y = pos.y;
@@ -71,6 +72,7 @@
 //        gl_FragColor = vec4( normal, 1.0 );
 
         gl_FragColor = vec4(1.0, 1.0, 1.0, 1.0) * diffuse_value;
+        */
       }
     </script>
 
@@ -78,8 +80,6 @@
 
     var width = 720,
         height = 720;
-
-    //window.innerWidth / window.innerHeight
 
     var nodes = d3.range(256).map(function() { return {radius: Math.random() * 20 + 4}; }),
         root = nodes[0];
@@ -154,7 +154,7 @@
           requestAnimationFrame(render);
 
           renderer.render(scene, camera);
- //         console.log( "calls:" + renderer.info.render.calls );
+          console.log( "calls:" + renderer.info.render.calls );
       }
       render();
 
