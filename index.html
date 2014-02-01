@@ -1,0 +1,174 @@
+
+<!doctype html>
+<html lang="en">
+	<head>
+		<title>three.js webgl - cloth simulation</title>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+	</head>
+
+	<body>
+
+		<!--script src="../build/three.min.js"></script-->
+		<script src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
+		<script src="https://rawgithub.com/mrdoob/three.js/master/build/three.js"></script>
+
+    <script id="vs" type="x-shader/x-vertex" >
+      varying vec2 vUv;
+      varying vec4 vColor;
+
+      void main(void)
+      {
+        vUv = uv;
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0 );
+      }
+    </script>
+
+    <script id="fs" type="x-shader/x-fragment" >
+      varying vec2 vUv;
+
+      void main(void) {
+        vec2 pos = vUv;
+        if( length( pos ) > 1.0)
+          discard;
+
+        float r = 1.0;
+        float x = pos.x;
+        float y = pos.y;
+        float z = sqrt( r*r - x*x - y*y );
+
+        vec3 normal = normalize( vec3( x, y, z ) );
+
+        vec3 vertex_light_position = vec3( 0.0, 0.0, 1.0 );
+
+        float diffuse_value = max(dot(normal, vertex_light_position), 0.0);
+
+//        gl_FragColor = vec4( normal, 1.0 );
+
+        gl_FragColor = vec4(1.0, 1.0, 1.0, 1.0) * diffuse_value;
+      }
+    </script>
+
+		<script>
+
+    var width = 720,
+        height = 720;
+
+    var nodes = d3.range(200).map(function() { return {radius: Math.random() * 12 + 4}; }),
+        root = nodes[0];
+
+    root.radius = 0;
+    root.fixed = true;
+
+    var force = d3.layout.force()
+        .gravity(0.05)
+        .charge(function(d, i) { return i ? 0 : -2000; })
+        .nodes(nodes)
+        .size([width, height]);
+
+      n = nodes.length;
+      for (i = 1; i < n; ++i) {
+        d = nodes[i];
+        d.x = 360;
+        d.y = -1200;
+      }
+
+      force.start();
+
+      var scene = new THREE.Scene();
+      var camera = new THREE.PerspectiveCamera(75, width / height, 0.1, 1000);
+      camera.position.z = 360;
+      camera.position.y = -360;
+      camera.position.x = 360;
+
+      var renderer = new THREE.WebGLRenderer();
+      renderer.setSize(width, height);
+      document.body.appendChild(renderer.domElement);
+
+      var r = 1.0;
+
+      var quad = new THREE.Shape();
+      x = -r;
+      y = -r;
+      d = r*2;
+      quad.moveTo( x, y ); y += d;
+      quad.lineTo( x, y ); x += d;
+      quad.lineTo( x, y ); y -= d;
+      quad.lineTo( x, y ); x -= d;
+      quad.lineTo( x, y );
+
+      var geometry = new THREE.ShapeGeometry( quad );
+
+      var material = new THREE.MeshBasicMaterial( { color: 0x00ff00 } );
+
+      var material = new THREE.ShaderMaterial({
+         vertexShader: document.getElementById('vs').innerHTML,
+         fragmentShader: document.getElementById('fs').innerHTML
+      });
+
+      n = nodes.length;
+      for (i = 1; i < n; ++i) {
+          var mesh = new THREE.Mesh( geometry, material );
+          node = nodes[i];
+          node.mesh = mesh;
+          r = node.radius;
+          mesh.scale.set( r, r, r );
+          mesh.position.set( node.x, node.y, 0 );
+          scene.add( mesh );
+      }
+
+      function render() {
+          requestAnimationFrame(render);
+
+          renderer.render(scene, camera);
+      }
+      render();
+
+      force.on("tick", function(e) {
+        var q = d3.geom.quadtree(nodes),
+            i,
+            d,
+            n = nodes.length;
+
+        for (i = 1; i < n; ++i) q.visit(collide(nodes[i]));
+
+        for (i = 1; i < n; ++i) {
+          d = nodes[i];
+          d.mesh.position.set( d.x, -d.y, 0 );
+        }
+      });
+/*
+      canvas.on("mousemove", function() {
+        var p1 = d3.mouse(this);
+        root.px = p1[0];
+        root.py = p1[1];
+        force.resume();
+      });
+*/
+
+      function collide(node) {
+        var r = node.radius + 16,
+            nx1 = node.x - r,
+            nx2 = node.x + r,
+            ny1 = node.y - r,
+            ny2 = node.y + r;
+        return function(quad, x1, y1, x2, y2) {
+          if (quad.point && (quad.point !== node)) {
+            var x = node.x - quad.point.x,
+                y = node.y - quad.point.y,
+                l = Math.sqrt(x * x + y * y),
+                r = node.radius + quad.point.radius + 3;
+            if (l < r) {
+              l = (l - r) / l * .5;
+              node.x -= x *= l;
+              node.y -= y *= l;
+              quad.point.x += x;
+              quad.point.y += y;
+            }
+          }
+          return x1 > nx2 || x2 < nx1 || y1 > ny2 || y2 < ny1;
+        };
+      }
+		</script>
+	</body>
+</html>
